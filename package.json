@@ -1,0 +1,35 @@
+{
+  "name": "deskops-phase-1-ticketing-core",
+  "version": "1.0.0",
+  "description": "DeskOps Phase 1: Ticketing Core Service Desk Platform with SLA Engine",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "ts-node src/server.ts",
+    "test": "vitest run"
+  },
+  "keywords": [
+    "deskops",
+    "ticket",
+    "state-machine",
+    "service-desk"
+  ],
+  "author": "Komal Khole",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.13.4",
+    "@types/supertest": "^6.0.2",
+    "supertest": "^7.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
+  }
+}
