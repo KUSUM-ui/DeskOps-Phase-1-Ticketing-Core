@@ -7,3 +7,176 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  RESIDENT
+  TECHNICIAN
+}
+
+enum TicketStatus {
+  NEW
+  TRIAGED
+  ASSIGNED
+  IN_PROGRESS
+  ON_HOLD
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum CommentVisibility {
+  PUBLIC
+  INTERNAL
+}
+
+model Organisation {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users      User[]
+  properties Property[]
+  tickets    Ticket[]
+  events     TicketEvent[]
+  comments   Comment[]
+  watchers   Watcher[]
+}
+
+model User {
+  id             String   @id @default(uuid()) @db.Uuid
+  organisationId String   @db.Uuid
+  name           String
+  email          String
+  role           UserRole @default(RESIDENT)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id])
+
+  ticketsCreated  Ticket[]      @relation("TicketCreator")
+  ticketsAssigned Ticket[]      @relation("TicketAssignee")
+  events          TicketEvent[] @relation("EventActor")
+  comments        Comment[]     @relation("CommentAuthor")
+  watching        Watcher[]
+
+  @@unique([id, organisationId])
+  @@unique([organisationId, email])
+  @@index([organisationId])
+}
+
+model Property {
+  id             String   @id @default(uuid()) @db.Uuid
+  organisationId String   @db.Uuid
+  name           String
+  address        String?
+  createdAt      DateTime @default(now())
+
+  organisation Organisation @relation(fields: [organisationId], references: [id])
+  units        Unit[]
+  tickets      Ticket[]
+
+  @@unique([id, organisationId])
+  @@index([organisationId])
+}
+
+model Unit {
+  id             String @id @default(uuid()) @db.Uuid
+  organisationId String @db.Uuid
+  propertyId     String @db.Uuid
+  unitNumber     String
+
+  property Property @relation(fields: [propertyId, organisationId], references: [id, organisationId])
+  tickets  Ticket[]
+
+  @@unique([id, organisationId])
+  @@unique([propertyId, unitNumber])
+}
+
+model Ticket {
+  id             String         @id @default(uuid()) @db.Uuid
+  organisationId String         @db.Uuid
+  propertyId     String         @db.Uuid
+  unitId         String?        @db.Uuid
+  createdById    String         @db.Uuid
+  assignedToId   String?        @db.Uuid
+  title          String
+  description    String
+  status         TicketStatus   @default(NEW)
+  priority       TicketPriority @default(NORMAL)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  resolvedAt     DateTime?
+  closedAt       DateTime?
+
+  organisation Organisation @relation(fields: [organisationId], references: [id])
+  property     Property     @relation(fields: [propertyId, organisationId], references: [id, organisationId])
+  unit         Unit?        @relation(fields: [unitId, organisationId], references: [id, organisationId])
+  createdBy    User         @relation("TicketCreator", fields: [createdById, organisationId], references: [id, organisationId])
+  assignedTo   User?        @relation("TicketAssignee", fields: [assignedToId, organisationId], references: [id, organisationId])
+
+  events   TicketEvent[]
+  comments Comment[]
+  watchers Watcher[]
+
+  @@unique([id, organisationId])
+  @@index([organisationId, status])
+  @@index([organisationId, assignedToId])
+  @@index([organisationId, createdAt])
+}
+
+model TicketEvent {
+  id             String       @id @default(uuid()) @db.Uuid
+  organisationId String       @db.Uuid
+  ticketId       String       @db.Uuid
+  actorId        String       @db.Uuid
+  fromStatus     TicketStatus?
+  toStatus       TicketStatus
+  note           String?
+  createdAt      DateTime     @default(now())
+
+  organisation Organisation @relation(fields: [organisationId], references: [id])
+  ticket       Ticket       @relation(fields: [ticketId, organisationId], references: [id, organisationId])
+  actor        User         @relation("EventActor", fields: [actorId, organisationId], references: [id, organisationId])
+
+  @@index([organisationId, ticketId, createdAt])
+}
+
+model Comment {
+  id             String            @id @default(uuid()) @db.Uuid
+  organisationId String            @db.Uuid
+  ticketId       String            @db.Uuid
+  authorId       String            @db.Uuid
+  body           String
+  visibility     CommentVisibility @default(PUBLIC)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id])
+  ticket       Ticket       @relation(fields: [ticketId, organisationId], references: [id, organisationId])
+  author       User         @relation("CommentAuthor", fields: [authorId, organisationId], references: [id, organisationId])
+
+  @@index([organisationId, ticketId, createdAt])
+}
+
+model Watcher {
+  organisationId String   @db.Uuid
+  ticketId       String   @db.Uuid
+  userId         String   @db.Uuid
+  createdAt      DateTime @default(now())
+
+  organisation Organisation @relation(fields: [organisationId], references: [id])
+  ticket       Ticket       @relation(fields: [ticketId, organisationId], references: [id, organisationId])
+  user         User         @relation(fields: [userId, organisationId], references: [id, organisationId])
+
+  @@id([ticketId, userId])
+  @@index([organisationId])
+}
