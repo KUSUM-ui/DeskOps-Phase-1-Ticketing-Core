@@ -18,8 +18,27 @@ export interface Ticket {
   status: TicketStatus;
   organisationId: string;
   assignedTo?: string;
+  duplicateOfId?: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export type CommentVisibility = "PUBLIC" | "INTERNAL";
+
+export interface Comment {
+  id: string;
+  ticketId: string;
+  authorId: string;
+  body: string;
+  visibility: CommentVisibility;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Watcher {
+  ticketId: string;
+  userId: string;
+  createdAt: Date;
 }
 
 export interface TicketEvent {
